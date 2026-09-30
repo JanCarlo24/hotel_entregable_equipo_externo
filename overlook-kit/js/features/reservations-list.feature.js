@@ -1,12 +1,13 @@
 let reservationsListComponent;
-window.renderReservations = async function() {
-    reservationsListComponent ||= Overlook.components.asyncList.mount(document.getElementById('reservations-list'), {
+window.renderReservations = async function renderReservations() {
+    const root = document.getElementById('reservations-list');
+    reservationsListComponent ||= Overlook.components.asyncList.mount(root, {
         load: async () => {
-            const user = JSON.parse(localStorage.getItem('overlook_user'));
+            const user = Overlook.services.auth.getStoredUser();
             return user ? Overlook.services.booking.listReservations(user.email) : [];
         },
-        render: res => Overlook.components.reservationCard(Overlook.safeRecord(res)),
-        empty: 'No tienes reservaciones activas.'
+        render: reservation => Overlook.components.reservationCard(reservation),
+        emptyHtml: '<div class="empty-state"><p>Aún no tienes reservas.</p><a class="luxury-button" href="#/rooms">Ver habitaciones</a></div>'
     });
     await reservationsListComponent.refresh();
 };

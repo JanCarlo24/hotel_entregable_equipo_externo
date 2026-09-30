@@ -1,86 +1,56 @@
-/* ==========================================================
-   PIEZA: Servicio de autenticacion (simulado)
-   Paso de armado: 5
-   Requiere: router.js, state.js
-   Expone: updateAuthUI(), window.loginGenerico(provider), window.logout()
-   ========================================================== */
+/* Sesión de demostración. No toca el DOM: la interfaz escucha overlook:auth-changed. */
+Overlook.services.auth = (() => {
+    const KEY = 'overlook_user';
+    const DEMO = {
+        Google: { email: 'invitado@gmail.com', nombre: 'Usuario Google' },
+        Apple: { email: 'invitado@icloud.com', nombre: 'Usuario Apple' },
+        Facebook: { email: 'invitado@facebook.com', nombre: 'Usuario Facebook' }
+    };
 
-function getStoredUser() {
-    try {
-        const raw = localStorage.getItem('overlook_user');
-        if (!raw) return null;
-        const user = JSON.parse(raw);
-        return user && user.email ? user : null;
-    } catch (error) {
-        localStorage.removeItem('overlook_user');
+    function read() {
+        try {
+            const raw = localStorage.getItem(KEY);
+            if (!raw) return null;
+            const user = JSON.parse(raw);
+            if (!user || typeof user !== 'object' || typeof user.email !== 'string') return null;
+            const email = user.email.trim().toLowerCase();
+            if (!email.includes('@') || !email.includes('.')) return null;
+            const nombre = typeof user.nombre === 'string' && user.nombre.trim() ? user.nombre.trim() : 'Huésped';
+            return { email, nombre };
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function getStoredUser() {
+        const user = read();
+        if (user) return user;
+        try {
+            if (localStorage.getItem(KEY)) localStorage.removeItem(KEY);
+        } catch (error) { /* localStorage no disponible. */ }
         return null;
     }
-}
 
-// SISTEMA DE AUTENTICACIÓN
-function updateAuthUI() {
-    const user = getStoredUser();
-    const btnAuth = document.getElementById('btn-auth');
-    const navLinks = document.getElementById('nav-links');
-
-    const oldResBtn = document.getElementById('btn-mis-reservas');
-    if(oldResBtn) oldResBtn.remove();
-
-    if (!btnAuth || !navLinks) return;
-
-    if (user) {
-        btnAuth.textContent = user.nombre || 'Mi cuenta';
-        btnAuth.onclick = () => window.navigate('reservations');
-
-        const resBtn = document.createElement('button');
-        resBtn.id = 'btn-mis-reservas';
-        resBtn.innerText = 'MIS RESERVAS';
-        resBtn.className = 'w-full px-4 py-2 border border-[#1d1d1b]/15 text-[#1d1d1b] rounded-full hover:bg-white/70 transition text-sm tracking-[0.12em] font-medium md:w-auto';
-        resBtn.onclick = () => window.navigate('reservations');
-        navLinks.insertBefore(resBtn, btnAuth);
-    } else {
-        btnAuth.textContent = 'INICIAR SESIÓN';
-        btnAuth.onclick = () => window.navigate('login');
-    }
-}
-
-window.loginGenerico = function(provider) {
-    let email = 'invitado@overlook.com';
-    let nombre = 'Usuario';
-
-    if (provider === 'Apple') { email = 'invitado@icloud.com'; nombre = 'Usuario Apple'; }
-    else if (provider === 'Google') { email = 'invitado@gmail.com'; nombre = 'Usuario Google'; }
-    else if (provider === 'Facebook') { email = 'invitado@facebook.com'; nombre = 'Usuario Facebook'; }
-
-    if (provider === 'manual') {
-        const input = document.querySelector('#view-login input[type=email]');
-        if (!input) return;
-        const value = (input.value || '').trim().toLowerCase();
-        if (!value || !input.checkValidity()) {
-            input.focus();
-            input.reportValidity();
-            return;
-        }
-        email = value;
-        nombre = 'Usuario manual';
+    function login({ email, nombre }) {
+        const previous = getStoredUser();
+        const nextEmail = String(email || '').trim().toLowerCase();
+        if (!nextEmail.includes('@') || !nextEmail.includes('.')) return null;
+        const next = { email: nextEmail, nombre: nombre && String(nombre).trim() ? String(nombre).trim() : 'Huésped' };
+        if (previous && previous.email !== next.email) Overlook.state.reset();
+        localStorage.setItem(KEY, JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('overlook:auth-changed', { detail: next }));
+        return next;
     }
 
-    const user = { email, nombre };
-    localStorage.setItem('overlook_user', JSON.stringify(user));
-    updateAuthUI();
-
-    if (currentRoomToBook) {
-        const roomId = currentRoomToBook.id;
-        currentRoomToBook = null;
-        window.startCheckout(roomId);
-        return;
+    function logout() {
+        localStorage.removeItem(KEY);
+        Overlook.state.reset();
+        window.dispatchEvent(new CustomEvent('overlook:auth-changed', { detail: null }));
     }
 
-    window.navigate('rooms');
-}
+    return { getStoredUser, login, logout, DEMO };
+})();
 
-window.logout = function() {
-    localStorage.removeItem('overlook_user');
-    updateAuthUI();
-    window.navigate('home');
+function getStoredUser() {
+    return Overlook.services.auth.getStoredUser();
 }

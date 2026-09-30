@@ -10,11 +10,11 @@ Overlook.services.booking = (() => {
         };
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
-        request.onblocked = () => reject(new Error('Cierra otras versiones abiertas de Overlook.'));
+        request.onblocked = () => reject(new Error('Cierra otras pestañas de Overlook e inténtalo de nuevo.'));
     });
-    async function transaction(mode, transform) {
-        const db = await ready;
-        return new Promise((resolve, reject) => {
+
+    function transaction(mode, transform) {
+        return ready.then(db => new Promise((resolve, reject) => {
             const tx = db.transaction('state', mode);
             const store = tx.objectStore('state');
             const read = store.get('hotel');
@@ -30,33 +30,58 @@ Overlook.services.booking = (() => {
                 resolve(result);
             };
             tx.onabort = tx.onerror = () => reject(failure || tx.error || new Error('No se pudo guardar.'));
-        });
+        }));
     }
+
+    function normalizeRoomId(roomId) {
+        if (typeof roomId === 'number' && Number.isInteger(roomId)) return roomId;
+        const text = String(roomId ?? '').trim();
+        return /^\d+$/.test(text) ? Number(text) : roomId;
+    }
+
     return {
         ready,
-        listRooms: () => transaction('readonly', s => s.rooms),
-        listReservations: email => transaction('readonly', s => s.reservations.filter(r => r.userEmail === email)),
+        listRooms: () => transaction('readonly', state => state.rooms),
+        listReservations: email => transaction('readonly', state => state.reservations.filter(item => item.userEmail === email)),
         async book({ roomId, userEmail, checkin, checkout }) {
-            const today = new Date();
-            const localToday = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-            const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value;
-            if (!userEmail || !validDate(checkin) || !validDate(checkout) || checkin < localToday || checkout <= checkin) throw new Error('Revisa la sesión y las fechas de llegada y salida.');
-            return transaction('readwrite', s => {
-                const room = s.rooms.find(r => r.id === roomId);
+            const dates = Overlook.dates;
+            const email = typeof userEmail === 'string' ? userEmail.trim() : '';
+            if (!email) throw new Error('Inicia sesión para reservar.');
+            const start = dates.parse(checkin);
+            const end = dates.parse(checkout);
+            if (!start || !end) throw new Error('Revisa las fechas de llegada y salida.');
+            if (start < dates.today()) throw new Error('La llegada no puede ser anterior a hoy.');
+            const nights = dates.nightsBetween(start, end);
+            if (!nights || nights < 1) throw new Error('La salida debe ser posterior a la llegada.');
+            if (nights > dates.MAX_NIGHTS) throw new Error('La estancia máxima es de ' + dates.MAX_NIGHTS + ' noches.');
+            const horizon = dates.addDays(dates.today(), dates.MAX_ADVANCE_DAYS);
+            if (start > horizon) throw new Error('Solo puedes reservar con hasta ' + dates.MAX_ADVANCE_DAYS + ' días de anticipación.');
+            const id = normalizeRoomId(roomId);
+            return transaction('readwrite', state => {
+                const room = state.rooms.find(item => item.id === id);
                 if (!room || room.qty <= 0) throw new Error('Esta habitación ya no tiene disponibilidad.');
-                const nights = Math.round((Date.parse(checkout)-Date.parse(checkin))/86400000);
-                const reservation = { id: 'RES-' + crypto.randomUUID(), userEmail, roomId, roomName: room.name, checkin, checkout, price: room.price, nights, total: room.priceNum * nights };
+                const reservation = {
+                    id: 'RES-' + Overlook.createId(),
+                    userEmail: email,
+                    roomId: room.id,
+                    roomName: room.name,
+                    checkin: dates.toISO(start),
+                    checkout: dates.toISO(end),
+                    price: room.priceNum,
+                    nights,
+                    total: room.priceNum * nights
+                };
                 room.qty--;
-                s.reservations.push(reservation);
+                state.reservations.push(reservation);
                 return reservation;
             });
         },
-        cancel: (id, email) => transaction('readwrite', s => {
-            const index = s.reservations.findIndex(r => r.id === id && r.userEmail === email);
+        cancel: (id, email) => transaction('readwrite', state => {
+            const index = state.reservations.findIndex(item => item.id === id && item.userEmail === email);
             if (index < 0) throw new Error('La reserva ya fue cancelada o no pertenece a esta sesión.');
-            const room = s.rooms.find(r => r.id === s.reservations[index].roomId);
+            const room = state.rooms.find(item => item.id === state.reservations[index].roomId);
             if (room) room.qty++;
-            s.reservations.splice(index, 1);
+            state.reservations.splice(index, 1);
         })
     };
 })();

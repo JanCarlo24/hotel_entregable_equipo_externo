@@ -1,17 +1,8 @@
-/* ==========================================================
-   PIEZA: Vista: Habitaciones (contenedor)
-   Paso de armado: 7
-   Requiere: core/registry.js
-   Expone: #view-rooms
-   ========================================================== */
-
 Overlook.views.rooms = `
-<section id="view-rooms" class="hidden min-h-screen bg-[#f5efe8] pt-28 pb-12">
-    <div class="container mx-auto px-6">
-        <h2 class="text-4xl md:text-5xl font-serif text-[#18252B] text-center mb-12">Nuestras habitaciones</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="rooms-container">
-            <!-- Se inyecta con JS -->
-        </div>
+<section id="view-rooms" class="view view-pad" hidden>
+    <div class="wrap">
+        <h1>Nuestras habitaciones</h1>
+        <p class="intro">El número de unidades es el inventario general del hotel, no la disponibilidad de tus fechas.</p>
+        <div class="card-grid" id="rooms-container" role="status" aria-live="polite" aria-busy="false"></div>
     </div>
-</section>
-`;
+</section>`;
