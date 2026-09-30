@@ -1,17 +1,24 @@
-// Plantilla reutilizable; recibe datos y devuelve HTML.
-Overlook.components.reservationCard = function(res) {
-
-return `
-        <div class="bg-white/90 p-6 rounded-[1.75rem] shadow-soft flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-l-8 border-[#d76d84]">
-            <div>
-                <p class="text-[10px] tracking-[0.18em] text-gray-500 font-bold mb-2 uppercase">Código: ${res.id}</p>
-                <h4 class="text-2xl font-serif text-[#1f3e3d]">${res.roomName}</h4>
-                <p class="text-sm text-gray-600 mt-2">Llegada: <span class="font-semibold text-[#1e2a2b]">${res.checkin}</span> | Salida: <span class="font-semibold text-[#1e2a2b]">${res.checkout}</span></p>
-                <p class="text-sm text-gray-800 font-bold mt-2">Total: ${res.price} / Noche · ${res.nights} noches · $${res.total} MXN</p>
+Overlook.components.reservationCard = function reservationCard(res) {
+    const nightly = typeof res.price === 'number' ? res.price : Number(String(res.price ?? '').replace(/[^\d.]/g, ''));
+    const nights = Number(res.nights);
+    const total = Number(res.total);
+    const line = Overlook.dates.formatMoney(nightly) + ' × ' + Overlook.dates.nightsLabel(nights) + ' = ' + Overlook.dates.formatMoney(total);
+    const id = String(res.id ?? '');
+    const shortCode = (id.length > 12 ? id.slice(0, 12) : id).toUpperCase();
+    return `
+        <article class="res-card">
+            <div class="res-copy">
+                <p class="code-label">Código <strong class="code-short">${Overlook.escape(shortCode)}</strong></p>
+                <details class="code-details">
+                    <summary>Ver código completo</summary>
+                    <code>${Overlook.escape(id)}</code>
+                </details>
+                <button type="button" class="text-button" data-action="copy-code" data-code="${Overlook.escape(id)}">Copiar código</button>
+                <h2>${Overlook.escape(res.roomName)}</h2>
+                <p class="res-dates">Llegada: <time datetime="${Overlook.escape(res.checkin)}">${Overlook.escape(Overlook.dates.formatDate(res.checkin))}</time>
+                    · Salida: <time datetime="${Overlook.escape(res.checkout)}">${Overlook.escape(Overlook.dates.formatDate(res.checkout))}</time></p>
+                <p class="res-total">${Overlook.escape(line)}</p>
             </div>
-            <button onclick="openCancelModal('${res.id}')" class="px-4 py-3 border border-[#d76d84] text-[#b2475f] rounded-full hover:bg-[#fff1f4] transition text-sm font-semibold uppercase tracking-[0.14em]">
-                Cancelar
-            </button>
-        </div>
-    `;
+            <button type="button" class="btn-danger-ghost" data-action="open-cancel" data-reservation-id="${Overlook.escape(id)}">Cancelar reserva</button>
+        </article>`;
 };

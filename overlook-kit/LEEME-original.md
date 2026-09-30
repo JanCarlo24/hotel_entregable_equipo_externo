@@ -1,3 +1,5 @@
+> **OBSOLETO.** Esta guía describe el armado anterior (localStorage, doble clic, otra paleta). No la uses para ejecutar ni integrar el kit. La guía vigente es [LEEME.md](LEEME.md). Se conserva como antecedente académico.
+
 # 🧱 Overlook Resort & Spa — Kit de armado
 
 Este proyecto venía como **un solo archivo HTML**. Ahora es un **kit de piezas** que se arma paso a paso, como un set de Lego.
