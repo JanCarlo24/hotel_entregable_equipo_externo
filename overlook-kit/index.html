@@ -1,0 +1,62 @@
+<!-- MODELO ARMADO: referencia de como debe quedar index.html al terminar el Paso 9 -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlook Resort & Spa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- PASO 2 - Estilo -->
+    <script src="js/config/tailwind.config.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-overlook-bg text-gray-800">
+
+    <div id="navbar-root"></div>   <!-- aqui se monta el navbar -->
+    <div id="modal-root"></div>    <!-- aqui se monta el modal -->
+    <main id="app-content"></main> <!-- aqui se montan las vistas -->
+
+    <!-- PASO 3 - Nucleo y datos -->
+    <script src="js/core/registry.js"></script>
+    <script src="js/data/rooms.data.js"></script>
+    <script src="js/core/state.js"></script>
+    <script src="js/core/storage-init.js"></script>
+
+    <script src="js/services/booking.service.js"></script>
+
+    <!-- PASO 4 - Router -->
+    <script src="js/core/router.js"></script>
+
+    <!-- PASO 5 - Servicio de autenticacion -->
+    <script src="js/services/auth.service.js"></script>
+
+    <!-- PASO 6 - Componentes -->
+    <script src="js/components/navbar.component.js"></script>
+    <script src="js/components/cancel-modal.component.js"></script>
+
+    <script src="js/components/roomCard.component.js"></script>
+    <script src="js/components/reservationCard.component.js"></script>
+    <script src="js/components/async-list.component.js"></script>
+
+    <!-- PASO 7 - Vistas -->
+    <script src="js/views/home.view.js"></script>
+    <script src="js/views/about.view.js"></script>
+    <script src="js/views/rooms.view.js"></script>
+    <script src="js/views/checkout.view.js"></script>
+    <script src="js/views/login.view.js"></script>
+    <script src="js/views/reservations.view.js"></script>
+
+    <!-- PASO 8 - Funcionalidades -->
+    <script src="js/features/rooms-list.feature.js"></script>
+    <script src="js/features/checkout.feature.js"></script>
+    <script src="js/features/reservations-list.feature.js"></script>
+    <script src="js/features/cancel-flow.feature.js"></script>
+
+    <!-- PASO 9 - Arranque -->
+    <script src="js/main.js"></script>
+
+</body>
+</html>

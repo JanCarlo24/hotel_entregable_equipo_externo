@@ -1,0 +1,86 @@
+:root {
+    --overlook-bg: #f5f1ea;
+    --overlook-panel: #faf7f3;
+    --overlook-dark: #1d1d1b;
+    --overlook-forest: #3f4f49;
+    --overlook-sage: #8d9d95;
+    --overlook-sand: #d9c7b1;
+    --overlook-terracotta: #a86f5a;
+    --overlook-rose: #d5b6a9;
+    --overlook-cream: #fffdf9;
+    --overlook-ink: #1f1f1d;
+    --overlook-moss: #707a72;
+    --overlook-taupe: #ece2d7;
+}
+
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Montserrat', sans-serif;
+    overflow-x: hidden;
+    background: var(--overlook-bg);
+    color: var(--overlook-ink);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    letter-spacing: -0.02em;
+    color: var(--overlook-dark);
+}
+
+button, input {
+    transition: all 0.2s ease;
+}
+
+button:focus-visible, input:focus-visible {
+    outline: 3px solid rgba(168, 111, 90, 0.25);
+    outline-offset: 2px;
+}
+
+.bg-hero {
+    background: linear-gradient(180deg, #f7f3ee 0%, #f1e9e0 100%);
+}
+
+.luxury-card {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(29, 29, 27, 0.08);
+    box-shadow: none;
+}
+
+.luxury-button {
+    background: var(--overlook-terracotta);
+    color: white;
+    box-shadow: none;
+}
+
+.luxury-button:hover {
+    transform: none;
+    filter: brightness(0.96);
+}
+
+.secondary-button {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(29, 29, 27, 0.12);
+    color: var(--overlook-dark);
+}
+
+.secondary-button:hover {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.soft-shell {
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(29, 29, 27, 0.08);
+    box-shadow: none;
+}
+
+.room-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+input[type='date'], input[type='email'], input[type='text'] {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--overlook-ink);
+}
+
