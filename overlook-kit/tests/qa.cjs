@@ -1,6 +1,11 @@
 // Recorrido de la auditoría: reservas, login, hash, modal, responsive, CDN y XSS.
 const { chromium } = require('playwright');
-const base = process.env.OVERLOOK_URL || 'http://127.0.0.1:8765';
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { startTestServer } = require('./server-fixture.cjs');
+let base;
+let fixture;
+let browser;
 const results = [];
 
 function pass(id, name) {
@@ -74,7 +79,9 @@ async function overflow(page) {
 }
 
 (async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/google-chrome' });
+    fixture = await startTestServer();
+    base = fixture.base;
+    browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || undefined });
     const consoleAll = [];
 
     await scenario('01 reserva normal', 'reserva con tarjeta válida y aviso demo', async () => {
@@ -116,6 +123,11 @@ async function overflow(page) {
         await page.waitForFunction(() => document.getElementById('flash-alert').textContent.includes('disponibilidad'));
         const hash = await page.evaluate(() => location.hash);
         if (hash !== '#/rooms') throw new Error(hash);
+        const reservations = await page.evaluate(() => Overlook.services.booking.listReservations('agotada@overlook.test'));
+        await Promise.all(reservations.map(reservation => page.evaluate(
+            item => Overlook.services.booking.cancel(item.id, item.userEmail),
+            reservation
+        )));
         consoleAll.push(...errors);
         await context.close();
     });
@@ -539,12 +551,12 @@ async function overflow(page) {
         await context.close();
     });
 
-    await scenario('B-01 LAN', 'reservar por HTTP en IP no local', async () => {
+    await scenario('B-01 API', 'reservar por el backend local HTTP', async () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
-        await page.goto('http://172.30.0.2:8765/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await page.waitForFunction(() => typeof Overlook !== 'undefined' && Overlook.services && Overlook.services.booking);
         const report = await page.evaluate(async () => {
             const dates = Overlook.dates;
@@ -559,29 +571,19 @@ async function overflow(page) {
                 });
                 booked = true;
             } catch (failure) { error = failure.message; }
-            return { secure: window.isSecureContext, uuid: typeof crypto.randomUUID === 'function', booked, error };
+            return { booked, error, rooms: (await Overlook.services.booking.listRooms()).length };
         });
-        if (report.secure || report.uuid || !report.booked) throw new Error(JSON.stringify(report));
-        if (errors.some(item => /randomUUID|is not a function/i.test(item))) throw new Error(errors.join(' | '));
+        if (!report.booked || report.rooms !== 3) throw new Error(JSON.stringify(report));
+        if (errors.length) throw new Error(errors.join(' | '));
         await context.close();
     });
 
-    await scenario('B-01 file', 'la app abre con file://', async () => {
+    await scenario('B-01 file', 'file:// informa que necesita el backend HTTP', async () => {
         const context = await browser.newContext();
         const page = await context.newPage();
-        await page.goto('file:///workspace/overlook-kit/index.html', { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await page.goto(pathToFileURL(path.join(__dirname, '..', 'index.html')).href, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await page.waitForFunction(() => typeof window.refreshOverlook === 'function', null, { timeout: 10000 });
-        const report = await page.evaluate(async () => {
-            const dates = Overlook.dates;
-            let booked = false;
-            let error = '';
-            try {
-                await Overlook.services.booking.book({ roomId: 1, userEmail: 'file@overlook.test', checkin: dates.toISO(dates.addDays(dates.today(), 2)), checkout: dates.toISO(dates.addDays(dates.today(), 3)) });
-                booked = true;
-            } catch (failure) { error = failure.message; }
-            return { secure: window.isSecureContext, uuid: typeof crypto.randomUUID === 'function', booked, error, hash: location.hash };
-        });
-        if (!report.booked) throw new Error(JSON.stringify(report));
+        await page.waitForFunction(() => document.getElementById('flash-alert').textContent.includes('backend local'));
         await context.close();
     });
 
@@ -608,8 +610,16 @@ async function overflow(page) {
     } else pass('consola', 'sin pageerror en la reserva normal');
 
     await browser.close();
+    browser = null;
+    await fixture.close();
+    fixture = null;
     const failed = results.filter(item => !item.ok);
     console.log('\n--- RESUMEN QA ---');
     for (const item of results) console.log((item.ok ? 'PASS' : 'FAIL') + '\t' + item.id + '\t' + item.name + (item.ok ? '' : '\t' + item.error));
     if (failed.length) process.exitCode = 1;
-})().catch(error => { console.error(error); process.exit(1); });
+})().catch(async error => {
+    console.error(error);
+    if (browser) await browser.close().catch(() => {});
+    if (fixture) await fixture.close().catch(() => {});
+    process.exitCode = 1;
+});

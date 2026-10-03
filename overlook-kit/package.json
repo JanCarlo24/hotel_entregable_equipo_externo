@@ -1,15 +1,17 @@
 {
   "name": "overlook-resort",
   "private": true,
-  "description": "Overlook Resort & Spa — demostración estática de reservas",
+  "description": "Overlook Resort & Spa — interfaz web y backend local para reservas",
   "scripts": {
-    "serve": "python3 -m http.server 8765",
+    "serve": "node ../backend/server.cjs",
     "test": "node tests/service.cjs",
     "test:browser": "node tests/concurrency.cjs",
     "test:qa": "node tests/qa.cjs"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
-    "fake-indexeddb": "^6.0.0",
     "playwright": "^1.49.0"
   }
 }

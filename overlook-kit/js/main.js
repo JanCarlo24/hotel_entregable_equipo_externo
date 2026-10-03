@@ -38,6 +38,12 @@ Overlook.flash = function flash(message, kind) {
         if (document.visibilityState === 'visible') refreshOverlook();
     });
 
+    try {
+        await Overlook.services.booking.ready;
+    } catch (error) {
+        Overlook.flash('No se pudo conectar con el backend local. Inicia la aplicación con npm run serve.', 'alert');
+    }
+
     const initial = (location.hash || '').replace(/^#\/?/, '').split('?')[0] || 'home';
     if (!location.hash) history.replaceState(null, '', '#/home');
     await navigate(initial);
